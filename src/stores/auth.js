@@ -1,31 +1,60 @@
-/* eslint-disable no-unused-vars */
 import { defineStore } from 'pinia'
-import axiosIns from '@/services/axios'
+import { authClient, axiosIns } from '@/services/axios'
+import axios from 'axios'
+import { useToast } from 'vue-toastification'
+
+const toast = useToast()
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     /* User */
+    user: null,
     form: {
-      nip: null,
-      password: null,
+      nip: '1',
+      password: '123456',
     },
     isLoading: false,
   }),
-  getters: {},
+  getters: {
+    userData(state) {
+      return state.user
+    },
+    guest() {
+      const storageItem = window.localStorage.getItem('guest')
+      if (!storageItem) return false
+      if (storageItem === 'isGuest') return true
+      if (storageItem === 'isNotGuest') return false
+    },
+  },
   actions: {
     async login() {
-      this.isLoading = true
       try {
-        const response = await axiosIns.post(`/login`, {
-          nip: this.form.nip,
-          password: this.form.password,
-        })
-
-        if (response.status == 200) {
+        this.isLoading = true
+        const resp = await axiosIns.post('/api/login', this.form)
+        if (resp.status == 201) {
+          localStorage.setItem('token', resp.data.token)
+          axiosIns.defaults.headers.common['Authorization'] = `Bearer ${resp.data.token}`
+          toast.success('Login sukses', {
+            timeout: 3000,
+          })
           return true
         }
       } catch (error) {
-        alert(error.message)
+        console.info(error)
+        toast.error(error.message, {
+          timeout: 3000,
+        })
+        return false
+      } finally {
+        this.isLoading = false
+      }
+    },
+    async getAuthUser() {
+      try {
+        const respo = await axiosIns.get(`/api/auth/user`)
+        this.user = respo.data
+        return respo.data
+      } catch (error) {
       } finally {
         this.isLoading = false
       }
@@ -34,8 +63,9 @@ export const useAuthStore = defineStore('auth', {
     async logout() {
       this.isLoading = true
       try {
-        const response = await axiosIns.get(`/logout`)
+        const response = await axiosIns.post(`/api/logout`)
         if (response.status == 200) {
+          this.user = null
           return true
         } else {
           return false
@@ -45,14 +75,6 @@ export const useAuthStore = defineStore('auth', {
       } finally {
         this.isLoading = false
       }
-    },
-    isLoggedIn() {
-      const user = localStorage.getItem('userDataLawas')
-      if (user) {
-        this.userData = JSON.parse(user)
-        return true
-      }
-      return false
     },
   },
 })

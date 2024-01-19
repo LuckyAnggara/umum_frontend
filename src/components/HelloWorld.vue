@@ -285,7 +285,7 @@
             </ul>
             <ul class="py-1 text-gray-700 dark:text-gray-300" aria-labelledby="dropdown">
               <li>
-                <a href="#" class="block py-2 px-4 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Sign out</a>
+                <div @click="show()" class="block py-2 px-4 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Sign out</div>
               </li>
             </ul>
           </div>
@@ -790,6 +790,7 @@
 <script setup>
 import { MoonIcon } from '@heroicons/vue/24/solid'
 import { SunIcon } from '@heroicons/vue/24/outline'
+import { useAuthStore } from '@/stores/auth'
 
 import {
   initAccordions,
@@ -805,6 +806,8 @@ import {
   initTooltips,
 } from 'flowbite'
 import { onMounted } from 'vue'
+
+const authStore = useAuthStore()
 
 onMounted(() => {
   initAccordions()
