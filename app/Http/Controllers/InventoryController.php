@@ -51,9 +51,13 @@ class InventoryController extends BaseController
                 'nama' => $request->nama,
                 'saldo' => $request->saldo,
                 'satuan' => $request->satuan,
-
                 'image' => $file_path,
             ]);
+
+            if ($request->saldo > 0) {
+                MutasiPersediaanController::createMutasi($result->id, 'DEBIT', $request->saldo, 'SALDO AWAL');
+            }
+
             DB::commit();
             return $this->sendResponse($result, 'Data berhasil dibuat');
         } catch (\Exception $e) {
@@ -98,6 +102,7 @@ class InventoryController extends BaseController
                 'satuan' => $request->satuan,
                 'image' => $request->file == 'null' ? null : $file_path ?? $inventory->image,
             ]);
+
             // Commit transaksi jika berhasil
             DB::commit();
             // Berikan respons sukses

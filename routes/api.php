@@ -25,13 +25,16 @@ Route::get('/show-image/{id}', [InventoryController::class, 'showImage']);
 
 Route::get('/inventory/get', [InventoryController::class, 'index']);
 Route::resource('permintaan-persediaan', PermintaanPersediaanController::class)->only([
-    'index', 'store', 'show', 'update'
+    'store', 'show',
 ]);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/user', [AuthController::class, 'user'])->name('user');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+    Route::resource('permintaan-persediaan', PermintaanPersediaanController::class)->only([
+        'index', 'update'
+    ]);
     Route::resource('inventory', InventoryController::class);
 
     Route::get('/persediaan/cek-nama', [InventoryController::class, 'cekNama']);

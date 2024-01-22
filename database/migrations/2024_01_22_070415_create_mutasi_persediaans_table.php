@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('detail_permintaan_persediaans', function (Blueprint $table) {
+        Schema::create('mutasi_persediaans', function (Blueprint $table) {
             $table->id();
-            $table->integer('permintaan_persediaan_id');
             $table->integer('inventory_id');
-            $table->double('jumlah')->default(0);
-            $table->double('jumlah_accept')->default(0);
-            $table->boolean('checked')->default(true);
+            $table->double('debit')->default(0);
+            $table->double('kredit')->default(0);
+            $table->double('saldo')->default(0);
+            $table->text('keterangan')->nullable();
             $table->timestamps();
         });
     }
@@ -27,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('detail_permintaan_persediaans');
+        Schema::dropIfExists('mutasi_persediaans');
     }
 };

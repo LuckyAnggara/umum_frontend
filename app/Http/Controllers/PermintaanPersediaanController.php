@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\DetailPermintaanPersediaan;
+use App\Models\MutasiPersediaan;
 use App\Models\PermintaanPersediaan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class PermintaanPersediaanController extends Controller
@@ -58,8 +60,9 @@ class PermintaanPersediaanController extends Controller
                 foreach ($data->detail as $key => $value) {
                     DetailPermintaanPersediaan::create([
                         'permintaan_persediaan_id' => $result->id,
-                        'inventory_id' => $value->id,
+                        'PermintaanPersediaan_id' => $value->id,
                         'jumlah' => $value->qty,
+                        'checked' => true,
                     ]);
                 }
                 $catatan = 'Permintaa persediaan baru telah dibuat';
@@ -80,6 +83,48 @@ class PermintaanPersediaanController extends Controller
             $result = PermintaanPersediaan::with('detail.persediaan', 'log')->where('tiket', $id)->first();
             return response()->json(['data' => $result], 200);
         } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function update(Request $request, $id)
+    {
+        $data = json_decode($request->getContent());
+        DB::beginTransaction();
+        try {
+            // Cari dan update data PermintaanPersediaan berdasarkan ID
+            $result = PermintaanPersediaan::findOrFail($id);
+            $result->update([
+                'status' => $data->status
+            ]);
+
+            if ($data->status == 'APPROVE') {
+
+                foreach ($data->detail as $key => $value) {
+                    $detail = DetailPermintaanPersediaan::find($value->id);
+                    if ($detail) {
+                        $detail->update([
+                            'jumlah_accept' => $value->confirm_permintaan,
+                            'status' => $value->checked
+                        ]);
+
+                        MutasiPersediaanController::createMutasi($value->inventory_id, 'KREDIT', $value->confirm_permintaan, 'PERMINTAAN DARI TIKE NOMOR #' . $result->tiket);
+                    }
+                }
+                $catatan = 'Permintaan di terima';
+                LogPermintaanPersediaanController::createLogPermintaan($result->id, 'APPROVE', $catatan, Auth::user()->name);
+            } else {
+                $catatan = 'Permintaan di tolak';
+                LogPermintaanPersediaanController::createLogPermintaan($result->id, 'REJECT', $catatan, Auth::user()->name);
+            }
+            // Commit transaksi jika berhasil
+            DB::commit();
+            // Berikan respons sukses
+            return response()->json(['message' => 'Data berhasil diperbarui'], 200);
+        } catch (\Exception $e) {
+            // Rollback transaksi jika terjadi kesalahan
+            DB::rollback();
+            // Berikan respons error
             return response()->json(['message' => $e->getMessage()], 500);
         }
     }

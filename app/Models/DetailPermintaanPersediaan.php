@@ -13,10 +13,13 @@ class DetailPermintaanPersediaan extends Model
         'permintaan_persediaan_id',
         'inventory_id',
         'jumlah',
+        'jumlah_accept',
+        'checked'
     ];
 
     protected $casts = [
         'created_at' => 'datetime:d F Y',
+        'checked' => 'boolean',
     ];
 
     public function persediaan()
