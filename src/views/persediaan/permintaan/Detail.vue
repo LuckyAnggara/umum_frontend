@@ -15,8 +15,13 @@
               >{{ permintaanPersediaanStore.singleResponses.status }}</span
             >
             <span
+              v-else-if="permintaanPersediaanStore.singleResponses.status == 'APPROVE'"
+              class="bg-yellow-100 text-yellow-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-yellow-900 dark:text-yellow-300"
+              >{{ permintaanPersediaanStore.singleResponses.status }}</span
+            >
+            <span
               v-else-if="permintaanPersediaanStore.singleResponses.status == 'DONE'"
-              class="bg-green-100 text-green-800 text-md font-medium px-2.5 py-0.5 rounded dark:bg-green-900 dark:text-green-300"
+              class="bg-green-100 text-green-800 text-sm font-medium me-2 px-2.5 py-0.5 rounded dark:bg-green-900 dark:text-green-300"
               >{{ permintaanPersediaanStore.singleResponses.status }}</span
             >
             <span
@@ -32,6 +37,7 @@
 
       <div class="flex flex-row place-self-end">
         <button
+          @click="approveConfirm()"
           type="button"
           class="w-24 text-green-700 hover:text-white border border-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 dark:border-green-500 dark:text-green-500 dark:hover:text-white dark:hover:bg-green-600 dark:focus:ring-green-800"
         >
@@ -39,6 +45,7 @@
         </button>
 
         <button
+          @click="rejectConfirm()"
           type="button"
           class="w-24 text-red-700 hover:text-white border border-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 dark:border-red-500 dark:text-red-500 dark:hover:text-white dark:hover:bg-red-600 dark:focus:ring-red-800"
         >
@@ -58,7 +65,7 @@
             <table class="lg:w-full min-w-full text-sm text-left text-gray-500 dark:text-gray-400">
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                 <tr>
-                  <th scope="col" class="px-4 py-3">
+                  <th v-if="!permintaanPersediaanStore.singleResponses.status !== 'ORDER'" scope="col" class="px-4 py-3">
                     <input
                       v-model="permintaanPersediaanStore.selectAll"
                       @change="permintaanPersediaanStore.checkAll"
@@ -143,14 +150,14 @@
             <div class="w-full flex flex-row justify-end">
               <span class="font-semibold">Total </span>
               <span class="mx-4">: </span>
-              <span class="font-semibold"> 10 Item </span>
+              <span class="font-semibold"> {{ permintaanPersediaanStore.singleResponses.detail.length }} Item </span>
             </div>
           </nav>
         </div>
 
         <div class="bg-white dark:bg-gray-800 relative shadow-md rounded-lg">
           <div class="flex flex-col w-2/3 md:flex-row items-center justify-between space-y-3 md:space-y-0 md:space-x-4 p-4">
-            <span class="text-gray-700 text-xl font-semibold">Activity</span>
+            <span class="text-gray-700 text-xl font-semibold">Log</span>
           </div>
           <div class="p-6 mb-3">
             <ol class="relative border-s border-gray-200 dark:border-gray-700">
@@ -207,12 +214,35 @@
       </div>
     </div>
 
-    <DeleteDialog :show="confirmDialog" @submit="deleteData" @close="confirmDialog = !confirmDialog" />
+    <ApproveDialog :show="approveDialog" @submit="approved" @close="approveDialog = !approveDialog">
+      <template #title>
+        <h1>Konfirmasi</h1>
+      </template>
+
+      <template #subTitle>
+        <p>Apa anda menyetujui permintaan ini ?</p>
+      </template>
+
+      <template #confirmTitle> <span>Approve</span> </template>
+    </ApproveDialog>
+
+    <RejectDialog :show="rejectDialog" @submit="rejected" @close="rejectDialog = !rejectDialog">
+      <template #title>
+        <h1>Konfirmasi</h1>
+      </template>
+
+      <template #subTitle>
+        <p>Apa anda akan menolak permintaan ini ?</p>
+      </template>
+
+      <template #confirmTitle> <span>Reject</span> </template>
+    </RejectDialog>
   </section>
 </template>
 
 <script setup>
-import DeleteDialog from '@/components/DeleteDialog.vue'
+import ApproveDialog from '@/components/ConfirmDialog.vue'
+import RejectDialog from '@/components/ConfirmDialog.vue'
 
 import { usePermintaanPersediaanStore } from '@/stores/permintaanPersediaan'
 
@@ -225,36 +255,26 @@ import { ArrowPathIcon } from '@heroicons/vue/24/outline'
 const route = useRoute()
 const permintaanPersediaanStore = usePermintaanPersediaanStore()
 
-const tiket = computed(() => {
-  return route.params.tiket ?? null
-})
+const approveDialog = ref(false)
+const rejectDialog = ref(false)
 
-function showImage(item) {
-  if (item.image == null) return 'https://placehold.co/40x40'
-  const a = storageUrl + 'storage/' + item.image
-  return a
+function approveConfirm() {
+  approveDialog.value = true
 }
 
-onMounted(async () => {
-  await permintaanPersediaanStore.show(tiket.value)
-})
-
-const confirmDialog = ref(false)
-
-function onDelete(item) {
-  deleteId.value = item.id
-  confirmDialog.value = true
+function rejectConfirm() {
+  rejectDialog.value = true
 }
 
-async function deleteData() {
-  confirmDialog.value = false
-  const id = toast.loading('Hapus data...', {
+async function approved() {
+  approveDialog.value = false
+  const id = toast.loading('Sedang dalam proses...', {
     position: toast.POSITION.BOTTOM_CENTER,
     type: 'info',
     isLoading: true,
   })
 
-  const success = await permintaanPersediaanStore.destroy(deleteId.value)
+  const success = await permintaanPersediaanStore.update({ status: 'APPROVE' })
   if (success) {
     toast.update(id, {
       render: 'Berhasil !!',
@@ -277,6 +297,27 @@ async function deleteData() {
       isLoading: false,
     })
   }
+}
+
+function rejected() {}
+
+const tiket = computed(() => {
+  return route.params.tiket ?? null
+})
+
+function showImage(item) {
+  if (item.image == null) return 'https://placehold.co/40x40'
+  const a = storageUrl + 'storage/' + item.image
+  return a
+}
+
+onMounted(async () => {
+  await permintaanPersediaanStore.show(tiket.value)
+})
+
+function onDelete(item) {
+  deleteId.value = item.id
+  confirmDialog.value = true
 }
 
 async function update() {

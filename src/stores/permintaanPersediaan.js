@@ -38,18 +38,11 @@ export const usePermintaanPersediaanStore = defineStore('permintaanPersediaan', 
     },
     detail(state) {
       state.singleResponses.detail.forEach((x) => {
-        x.checked = true
         x.confirm_permintaan = x.jumlah
       })
       return state.singleResponses.detail
     },
 
-    inputData(state) {
-      state.dataOrder.input.forEach((x) => {
-        x.estimate_quantity = 0
-      })
-      return state.dataOrder.input
-    },
     currentPage(state) {
       return state.responses?.current_page
     },
@@ -156,6 +149,25 @@ export const usePermintaanPersediaanStore = defineStore('permintaanPersediaan', 
         alert(error)
       } finally {
         this.isDestroyLoading = false
+      }
+    },
+    async update({ status = 'APPROVE' }) {
+      let form = {
+        status: status,
+        detail: this.singleResponses.detail,
+      }
+      try {
+        const response = await axiosIns.patch(`/api/permintaan-persediaan/${this.singleResponses.id}`, form)
+        if (response.status == 200) {
+          console.info(response)
+          return true
+        } else {
+          return false
+        }
+      } catch (error) {
+        alert(error)
+      } finally {
+        this.isUpdateLoading = false
       }
     },
     addCart({ item, qty }) {
